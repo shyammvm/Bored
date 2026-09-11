@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/jpeg" href="/logo/logo.jpeg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Bored? Coworking Apathy Unit." />
+    <title>Bored?</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <!-- Top Navigation Bar -->
+    <header class="top-nav" id="top-nav">
+      <div class="nav-brand">
+        <div class="brand-logo">
+          <img src="/logo/logo.jpeg" alt="Bored!" class="brand-logo-img" />
+          <span class="brand-name">Bored!</span>
+        </div>
+        <div class="connection-status" id="connection-status" title="Status">
+          <span class="status-dot online"></span>
+          <span class="status-label" id="status-label">Ready</span>
+        </div>
+      </div>
+
+      <!-- Room Details & Copy Link -->
+      <div class="room-pill-container" id="room-pill-container" style="display: none;">
+        <div class="room-pill">
+          <span class="room-code-label">Room:</span>
+          <button class="room-code-badge" id="btn-copy-code" title="Click to copy room code">
+            <span class="room-code-value" id="header-room-code">----</span>
+            <svg class="copy-icon-mini" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+          <button class="btn-icon-subtle" id="btn-copy-invite" title="Copy invite link">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            <span id="copy-feedback-text">Invite</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Header Pomodoro Quick Glance -->
+      <div class="header-pomodoro-glance" id="header-pomodoro-glance">
+        <div class="timer-chip" id="header-timer-chip" title="Timer">
+          <i data-lucide="timer" class="timer-chip-icon"></i>
+          <span class="timer-chip-type" id="header-timer-type">Shared</span>
+          <span class="timer-chip-time" id="header-timer-time">25:00</span>
+          <span class="timer-chip-mode" id="header-timer-mode">Focus</span>
+        </div>
+      </div>
+
+      <!-- User Profile & Peers Count -->
+      <div class="nav-right">
+        <div class="peers-counter" id="peers-counter" title="Coworkers">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span id="peer-count-num">1</span>
+        </div>
+
+        <div class="my-profile-chip" id="my-profile-chip">
+          <span class="avatar-badge initials-avatar" id="header-user-avatar">AR</span>
+          <span class="profile-name" id="header-user-name">Alex</span>
+          <span class="profile-status-tag" id="header-focus-tag">Bored</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="workspace-container">
+      <!-- Stage: Video Mesh Grid & Screen Share Presentation -->
+      <section class="stage-section" id="stage-section">
+        <!-- Presentation Stage (Spotlight for active screen shares, max 2 full view) -->
+        <div class="presentation-stage" id="presentation-stage" style="display: none;">
+          <div class="screens-container" id="screens-container"></div>
+        </div>
+
+        <div class="video-grid" id="video-grid">
+          <!-- Local User Tile (Always rendered) -->
+          <div class="video-tile local-tile" id="tile-local">
+            <div class="tile-video-wrapper">
+              <video id="local-video" autoplay muted playsinline></video>
+              <div class="avatar-fallback" id="local-avatar-fallback">
+                <div class="avatar-fallback-icon initials-avatar" id="local-fallback-icon">AR</div>
+                <div class="avatar-fallback-name" id="local-fallback-name">Alex</div>
+              </div>
+              <div class="speaking-indicator-ring" id="local-speaking-ring"></div>
+            </div>
+
+            <!-- Tile Overlay Header -->
+            <div class="tile-overlay-top">
+              <div class="tile-user-info">
+                <span class="tile-avatar initials-avatar" id="local-tile-avatar">AR</span>
+                <span class="tile-name" id="local-tile-name">Alex (Host)</span>
+                <span class="tile-badge-me">YOU</span>
+                <div class="speaking-wave" id="local-speaking-wave" style="display: none;">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="tile-status-badges" id="local-status-badges">
+                <span class="focus-badge" id="local-focus-badge">Bored</span>
+              </div>
+            </div>
+
+            <!-- Tile Active Task Pinned Tag -->
+            <div class="tile-active-task" id="local-active-task" style="display: none;">
+              <span class="task-pin-icon"><i data-lucide="target"></i></span>
+              <span class="task-pin-text" id="local-task-pin-text">Working on...</span>
+            </div>
+
+            <!-- Tile Overlay Bottom Quick Status -->
+            <div class="tile-overlay-bottom">
+              <div class="stream-indicators">
+                <span class="indicator-icon" id="local-indicator-mic" title="Mic On">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                </span>
+                <span class="indicator-icon" id="local-indicator-cam" title="Camera On">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+          <!-- Remote Coworkers injected dynamically here -->
+        </div>
+
+        <!-- Floating Bottom Control Dock -->
+        <nav class="control-dock" id="control-dock">
+          <div class="dock-group">
+            <button class="dock-btn" id="btn-toggle-mic" title="Toggle Mic (M)">
+              <svg class="icon-mic-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+              <svg class="icon-mic-off" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+              <span class="dock-btn-label">Mic</span>
+            </button>
+
+            <button class="dock-btn" id="btn-toggle-cam" title="Toggle Camera (V)">
+              <svg class="icon-cam-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+              <svg class="icon-cam-off" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              <span class="dock-btn-label">Cam</span>
+            </button>
+
+            <button class="dock-btn" id="btn-toggle-screen" title="Share Screen">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              <span class="dock-btn-label">Share</span>
+            </button>
+
+            <button class="dock-btn" id="btn-audio-settings" title="Audio Devices">
+              <i data-lucide="sliders" style="width: 20px; height: 20px;"></i>
+              <span class="dock-btn-label">Audio</span>
+            </button>
+          </div>
+
+          <div class="dock-divider"></div>
+
+          <div class="dock-group">
+            <button class="dock-btn dock-btn-deafen" id="btn-toggle-deafen" title="Deafen & Focus">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
+              <span class="dock-btn-label" id="deafen-btn-label">Deafen</span>
+            </button>
+
+            <button class="dock-btn" id="btn-status-picker" title="Status">
+              <i data-lucide="zap" class="dock-status-icon" id="dock-status-icon"></i>
+              <span class="dock-btn-label">Status</span>
+            </button>
+          </div>
+
+          <div class="dock-divider"></div>
+
+          <!-- Mini YouTube Player Widget in Dock -->
+          <div class="dock-music-widget" id="dock-music-widget">
+            <button class="btn-icon-subtle dock-music-play" id="dock-music-play-btn" title="Play / Pause">
+              <i data-lucide="play" id="dock-music-play-icon"></i>
+            </button>
+            <div class="dock-music-info" id="dock-open-music-tab" title="Music">
+              <span class="dock-music-title" id="dock-music-title">No track</span>
+              <span class="dock-music-sub">Audio</span>
+            </div>
+            <input type="range" class="dock-vol-slider" id="dock-music-vol" min="0" max="100" value="100" title="My Volume (Personal)">
+          </div>
+
+          <div class="dock-divider"></div>
+
+          <div class="dock-group">
+            <button class="dock-btn dock-btn-leave" id="btn-leave-room" title="Leave">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              <span class="dock-btn-label">Leave</span>
+            </button>
+          </div>
+        </nav>
+      </section>
+
+      <!-- Sidebar Section (Tabs: Tasks, Chat, Pomodoro, Music, Code) -->
+      <aside class="sidebar-section" id="sidebar-section">
+        <!-- Draggable Resizer Handle -->
+        <div class="sidebar-resizer" id="sidebar-resizer" title="Drag to resize sidebar • Double-click to toggle width"></div>
+
+        <div class="sidebar-tabs-nav">
+          <button class="tab-btn active" data-tab="tasks" id="tab-btn-tasks">
+            <i data-lucide="check-square" class="tab-icon"></i>
+            <span class="tab-label">Tasks</span>
+            <span class="tab-badge" id="tasks-badge">0</span>
+          </button>
+          <button class="tab-btn" data-tab="chat" id="tab-btn-chat">
+            <i data-lucide="message-square" class="tab-icon"></i>
+            <span class="tab-label">Chat</span>
+            <span class="tab-badge unread-badge" id="chat-unread-badge" style="display: none;">0</span>
+          </button>
+          <button class="tab-btn" data-tab="pomodoro" id="tab-btn-pomodoro">
+            <i data-lucide="timer" class="tab-icon"></i>
+            <span class="tab-label">Timer</span>
+          </button>
+          <button class="tab-btn" data-tab="music" id="tab-btn-music">
+            <i data-lucide="music" class="tab-icon"></i>
+            <span class="tab-label">Music</span>
+          </button>
+          <button class="tab-btn" data-tab="codeshare" id="tab-btn-codeshare" title="Codeshare Pad">
+            <i data-lucide="code-2" class="tab-icon"></i>
+            <span class="tab-label">Code</span>
+            <span class="tab-badge" id="codeshare-badge" style="display: none;">0</span>
+          </button>
+          <button type="button" class="tab-btn-toggle-expand" id="btn-toggle-sidebar-expand" title="Expand sidebar">
+            <i data-lucide="chevrons-left" id="icon-sidebar-expand"></i>
+          </button>
+        </div>
+
+        <!-- Sidebar Tab Panels -->
+        <div class="sidebar-content">
+          <!-- TAB 1: TASKS -->
+          <div class="tab-pane active" id="pane-tasks">
+            <div class="tasks-subnav">
+              <button class="subtab-btn active" id="subtab-my-tasks">Mine</button>
+              <button class="subtab-btn" id="subtab-coworker-tasks">Room</button>
+            </div>
+
+            <!-- View A: My Personal Task List -->
+            <div class="tasks-subview" id="view-my-tasks">
+              <div class="task-add-box">
+                <input type="text" id="input-new-task" placeholder="New task..." maxlength="120" />
+                <button class="btn-primary-sm" id="btn-add-task">Add</button>
+              </div>
+
+              <div class="task-stats-bar">
+                <span class="task-stats-text" id="task-stats-text">0 done</span>
+                <div class="task-progress-track">
+                  <div class="task-progress-fill" id="task-progress-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="task-list-container" id="my-task-list"></div>
+            </div>
+
+            <!-- View B: Coworkers' Tasks -->
+            <div class="tasks-subview" id="view-coworker-tasks" style="display: none;">
+              <div class="coworker-tasks-container" id="coworker-tasks-list">
+                <div class="empty-state">No coworkers yet</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: TEXT CHAT -->
+          <div class="tab-pane" id="pane-chat">
+            <div class="chat-messages-container" id="chat-messages-container"></div>
+
+            <div class="chat-input-bar">
+              <input type="text" id="chat-input" placeholder="Message..." maxlength="500" />
+              <button class="btn-send-chat" id="btn-send-chat" title="Send">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 3: DUAL POMODORO -->
+          <div class="tab-pane" id="pane-pomodoro">
+            <div class="pomodoro-header-bar">
+              <div class="pomodoro-tab-switcher">
+                <button class="pomo-switch-btn active" id="pomo-switch-room">
+                  <i data-lucide="users"></i>
+                  <span>Shared</span>
+                </button>
+                <button class="pomo-switch-btn" id="pomo-switch-private">
+                  <i data-lucide="lock"></i>
+                  <span>Private</span>
+                </button>
+              </div>
+              <button class="btn-pomo-customize" id="btn-pomo-customize" title="Customize timer intervals, sounds & cycles">
+                <i data-lucide="sliders"></i>
+                <span>Customize</span>
+              </button>
+            </div>
+
+            <!-- Section 1: Shared Room Pomodoro -->
+            <div class="pomo-view-container" id="pomo-view-room">
+              <div class="pomo-card">
+                <!-- Round / Cycle Tracker -->
+                <div class="pomo-cycle-tracker" id="room-cycle-tracker">
+                  <div class="cycle-pill">
+                    <span class="cycle-label">Round</span>
+                    <span class="cycle-text" id="room-cycle-text">1 of 4</span>
+                    <div class="cycle-dots" id="room-cycle-dots">
+                      <span class="cycle-dot active"></span>
+                      <span class="cycle-dot"></span>
+                      <span class="cycle-dot"></span>
+                      <span class="cycle-dot"></span>
+                    </div>
+                  </div>
+                  <div class="cycle-completed-tally" id="room-completed-tally" title="Completed focus sessions">
+                    <span class="tally-icon">🍅</span>
+                    <span class="tally-count" id="room-completed-count">0</span>
+                  </div>
+                </div>
+
+                <div class="pomo-mode-selector">
+                  <button class="mode-btn active" data-room-mode="focus" id="btn-room-mode-focus">Focus 25m</button>
+                  <button class="mode-btn" data-room-mode="shortBreak" id="btn-room-mode-shortBreak">Short 5m</button>
+                  <button class="mode-btn" data-room-mode="longBreak" id="btn-room-mode-longBreak">Long 15m</button>
+                </div>
+
+                <div class="timer-display-wrap">
+                  <div class="timer-clock" id="room-timer-digits">25:00</div>
+                  <div class="timer-mode-tag" id="room-timer-mode-tag">Shared Focus</div>
+                </div>
+
+                <div class="pomo-progress-ring-bar">
+                  <div class="pomo-progress-ring-fill" id="room-timer-progress-fill" style="width: 0%;"></div>
+                </div>
+
+                <div class="pomo-actions">
+                  <button class="btn-pomo-primary" id="btn-room-timer-toggle">Start</button>
+                  <button class="btn-pomo-secondary" id="btn-room-timer-reset">Reset</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2: Private Personal Pomodoro -->
+            <div class="pomo-view-container" id="pomo-view-private" style="display: none;">
+              <div class="pomo-card">
+                <!-- Round / Cycle Tracker -->
+                <div class="pomo-cycle-tracker" id="private-cycle-tracker">
+                  <div class="cycle-pill">
+                    <span class="cycle-label">Round</span>
+                    <span class="cycle-text" id="private-cycle-text">1 of 4</span>
+                    <div class="cycle-dots" id="private-cycle-dots">
+                      <span class="cycle-dot active"></span>
+                      <span class="cycle-dot"></span>
+                      <span class="cycle-dot"></span>
+                      <span class="cycle-dot"></span>
+                    </div>
+                  </div>
+                  <div class="cycle-completed-tally" id="private-completed-tally" title="Completed focus sessions">
+                    <span class="tally-icon">🍅</span>
+                    <span class="tally-count" id="private-completed-count">0</span>
+                  </div>
+                </div>
+
+                <div class="pomo-mode-selector">
+                  <button class="mode-btn active" data-private-mode="focus" id="btn-private-mode-focus">Focus 25m</button>
+                  <button class="mode-btn" data-private-mode="shortBreak" id="btn-private-mode-shortBreak">Short 5m</button>
+                  <button class="mode-btn" data-private-mode="longBreak" id="btn-private-mode-longBreak">Long 15m</button>
+                </div>
+
+                <div class="timer-display-wrap">
+                  <div class="timer-clock" id="private-timer-digits">25:00</div>
+                  <div class="timer-mode-tag" id="private-timer-mode-tag">Private Focus</div>
+                </div>
+
+                <div class="pomo-progress-ring-bar">
+                  <div class="pomo-progress-ring-fill" id="private-timer-progress-fill" style="width: 0%;"></div>
+                </div>
+
+                <div class="pomo-actions">
+                  <button class="btn-pomo-primary" id="btn-private-timer-toggle">Start</button>
+                  <button class="btn-pomo-secondary" id="btn-private-timer-reset">Reset</button>
+                </div>
+
+                <div class="private-badge-toggle-box">
+                  <label class="toggle-checkbox-label">
+                    <input type="checkbox" id="check-show-private-badge" checked />
+                    <span class="toggle-text">Show on tile</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: YOUTUBE MUSIC -->
+          <div class="tab-pane" id="pane-music">
+            <div class="music-panel-card">
+              <div class="custom-yt-section">
+                <h4 class="stations-heading">YouTube</h4>
+                <div class="custom-yt-input-row">
+                  <input type="text" id="input-custom-yt" placeholder="URL or ID..." />
+                  <button class="btn-primary-sm" id="btn-play-custom-yt">Play</button>
+                </div>
+              </div>
+
+              <!-- Now Playing Card -->
+              <div class="now-playing-box">
+                <div class="now-playing-badge">
+                  <span class="pulse-music-dot"></span>
+                  <span id="music-status-text">Idle</span>
+                </div>
+                <h3 class="now-playing-title" id="music-now-title">No track loaded</h3>
+
+                <!-- Audio Visualizer animation bars -->
+                <div class="music-wave-bars" id="music-wave-bars">
+                  <div class="wave-bar"></div>
+                  <div class="wave-bar"></div>
+                  <div class="wave-bar"></div>
+                  <div class="wave-bar"></div>
+                  <div class="wave-bar"></div>
+                </div>
+
+                <div class="music-primary-controls">
+                  <button class="btn-music-play" id="btn-music-play">Play</button>
+                </div>
+
+                <div class="music-volume-container">
+                  <div class="music-volume-header">
+                    <span>Room Volume</span>
+                    <span class="vol-val" id="music-vol-val">50%</span>
+                  </div>
+                  <div class="music-volume-row">
+                    <i data-lucide="volume-2" class="vol-icon" title="Room Volume"></i>
+                    <input type="range" id="input-music-volume" min="0" max="100" value="50" class="slider-styled" title="Room Volume (Universal)" />
+                  </div>
+                </div>
+
+                <div class="music-sync-toggle-box">
+                  <label class="toggle-checkbox-label">
+                    <input type="checkbox" id="check-music-sync-dj" checked />
+                    <span class="toggle-text">Sync with Room</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 5: CODESHARE PAD -->
+          <div class="tab-pane" id="pane-codeshare">
+            <div class="codeshare-panel-card">
+              <!-- Toolbar -->
+              <div class="codeshare-toolbar">
+                <div class="codeshare-toolbar-left">
+                  <div class="codeshare-lang-select-wrap">
+                    <select id="select-codeshare-lang" class="codeshare-lang-select" title="Syntax Mode">
+                      <option value="text" selected>Plain Text</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="typescript">TypeScript</option>
+                      <option value="python">Python</option>
+                      <option value="html">HTML</option>
+                      <option value="css">CSS</option>
+                      <option value="json">JSON</option>
+                      <option value="markdown">Markdown</option>
+                      <option value="sql">SQL</option>
+                      <option value="cpp">C++</option>
+                    </select>
+                  </div>
+                  <div class="codeshare-sync-status" id="codeshare-sync-status" title="Real-time sync active">
+                    <span class="pulse-dot"></span>
+                    <span class="sync-status-text">Live</span>
+                  </div>
+                </div>
+
+                <div class="codeshare-toolbar-right">
+                  <button type="button" class="codeshare-tool-btn" id="btn-codeshare-copy" title="Copy text to clipboard">
+                    <i data-lucide="copy"></i>
+                    <span class="tool-btn-label">Copy</span>
+                  </button>
+                  <button type="button" class="codeshare-tool-btn" id="btn-codeshare-download" title="Download snippet">
+                    <i data-lucide="download"></i>
+                  </button>
+                  <button type="button" class="codeshare-tool-btn codeshare-btn-expand" id="btn-codeshare-expand" title="Open Fullscreen">
+                    <i data-lucide="maximize-2"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Typing & Collaborators Bar -->
+              <div class="codeshare-collaborators-bar" id="codeshare-collaborators-bar">
+                <div class="codeshare-collab-left">
+                  <i data-lucide="users" class="collab-icon"></i>
+                  <span class="collab-text" id="codeshare-collab-text">Shared Pad</span>
+                </div>
+                <div class="codeshare-typing-indicator" id="codeshare-typing-indicator" style="display: none;">
+                  <span class="typing-dots">
+                    <span></span><span></span><span></span>
+                  </span>
+                  <span class="typing-name" id="codeshare-typing-text">typing...</span>
+                </div>
+              </div>
+
+              <!-- Editor Surface with Line Numbers -->
+              <div class="codeshare-editor-wrapper">
+                <div class="codeshare-gutter" id="codeshare-gutter" aria-hidden="true">
+                  <div class="gutter-num">1</div>
+                </div>
+                <textarea 
+                  id="codeshare-textarea" 
+                  class="codeshare-textarea" 
+                  placeholder="Type raw text, paste code, or share snippets together..." 
+                  spellcheck="false" 
+                  autocomplete="off" 
+                  autocorrect="off" 
+                  autocapitalize="off"></textarea>
+              </div>
+
+              <!-- Footer Stats & Actions -->
+              <div class="codeshare-footer">
+                <div class="codeshare-stats">
+                  <span id="codeshare-stat-lines">1 line</span>
+                  <span class="stat-sep">•</span>
+                  <span id="codeshare-stat-words">0 words</span>
+                  <span class="stat-sep">•</span>
+                  <span id="codeshare-stat-chars">0 chars</span>
+                </div>
+                <button type="button" class="codeshare-footer-btn" id="btn-codeshare-clear" title="Clear Pad">
+                  <i data-lucide="trash-2"></i>
+                  <span>Clear</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Hidden YouTube & Remote Audio Containers -->
+    <div id="youtube-player-hidden" style="position: fixed; bottom: 0; right: 0; width: 640px; height: 360px; opacity: 0.001; pointer-events: none; z-index: -999;"></div>
+    <div id="remote-audio-container" style="position: fixed; bottom: 0; right: 0; width: 0; height: 0; overflow: hidden; pointer-events: none; z-index: -999;" aria-hidden="true"></div>
+
+    <!-- Audio Devices Modal -->
+    <div class="modal-backdrop" id="audio-settings-backdrop" style="display: none;">
+      <div class="modal-card modal-card-sm">
+        <div class="modal-header">
+          <h3>Audio Devices</h3>
+          <button class="btn-close-modal" id="btn-close-audio-settings" title="Close">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="audio-settings-body">
+          <div class="audio-setting-group">
+            <label class="audio-setting-label" for="select-audio-input">
+              <i data-lucide="mic"></i>
+              <span>Microphone</span>
+            </label>
+            <select class="audio-device-select" id="select-audio-input"></select>
+          </div>
+          <div class="audio-setting-group">
+            <label class="audio-setting-label" for="select-audio-output">
+              <i data-lucide="volume-2"></i>
+              <span>Speaker</span>
+            </label>
+            <select class="audio-device-select" id="select-audio-output"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Picker Modal -->
+    <div class="modal-backdrop" id="status-modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Status</h3>
+          <button class="btn-close-modal" id="btn-close-status-modal" title="Close">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="status-options-grid" id="status-options-grid">
+          <button class="status-option-btn" data-status="Bored"><i data-lucide="meh"></i><span>Bored</span></button>
+          <button class="status-option-btn" data-status="Deep Work"><i data-lucide="zap"></i><span>Deep Work</span></button>
+          <button class="status-option-btn" data-status="Focus"><i data-lucide="headphones"></i><span>Focus</span></button>
+          <button class="status-option-btn" data-status="Coding"><i data-lucide="code"></i><span>Coding</span></button>
+          <button class="status-option-btn" data-status="Reading"><i data-lucide="book-open"></i><span>Reading</span></button>
+          <button class="status-option-btn" data-status="Break"><i data-lucide="coffee"></i><span>Break</span></button>
+          <button class="status-option-btn" data-status="Ideating"><i data-lucide="lightbulb"></i><span>Ideating</span></button>
+        </div>
+        <div class="custom-status-row">
+          <div class="custom-emoji-wrapper">
+            <button type="button" class="btn-emoji-picker" id="btn-custom-emoji-picker" title="Pick Emoji">
+              <span id="custom-status-chosen-emoji">🎯</span>
+            </button>
+            <div class="emoji-picker-dropdown" id="emoji-picker-dropdown" style="display: none;">
+              <span class="emoji-opt">🎯</span>
+              <span class="emoji-opt">🚀</span>
+              <span class="emoji-opt">⚡</span>
+              <span class="emoji-opt">🧠</span>
+              <span class="emoji-opt">💻</span>
+              <span class="emoji-opt">🎧</span>
+              <span class="emoji-opt">☕</span>
+              <span class="emoji-opt">📚</span>
+              <span class="emoji-opt">🔥</span>
+              <span class="emoji-opt">💡</span>
+              <span class="emoji-opt">🎨</span>
+              <span class="emoji-opt">📝</span>
+              <span class="emoji-opt">🌿</span>
+              <span class="emoji-opt">🛠️</span>
+              <span class="emoji-opt">✨</span>
+              <span class="emoji-opt">🧘</span>
+              <span class="emoji-opt">🏃</span>
+              <span class="emoji-opt">👾</span>
+              <span class="emoji-opt">💪</span>
+              <span class="emoji-opt">🍕</span>
+            </div>
+          </div>
+          <input type="text" id="input-custom-status" placeholder="Custom status..." maxlength="30" />
+          <button class="btn-primary-sm" id="btn-set-custom-status">Set</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pomodoro Customization Modal -->
+    <div class="modal-backdrop" id="pomodoro-settings-backdrop" style="display: none;">
+      <div class="modal-card modal-card-pomo-settings">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <i data-lucide="sliders" class="modal-title-icon"></i>
+            <h3>Timer Customization</h3>
+          </div>
+          <button class="btn-close-modal" id="btn-close-pomo-settings" title="Close">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div class="pomo-settings-body">
+          <!-- Target selector: Customize Private vs Room -->
+          <div class="pomo-setting-target-tabs">
+            <button type="button" class="pomo-target-tab active" data-target="private" id="pomo-target-private">
+              <i data-lucide="lock"></i>
+              <span>My Private Timer</span>
+            </button>
+            <button type="button" class="pomo-target-tab" data-target="room" id="pomo-target-room">
+              <i data-lucide="users"></i>
+              <span>Shared Room Timer</span>
+            </button>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="pomo-setting-section">
+            <label class="pomo-setting-label">
+              <span>Quick Presets</span>
+            </label>
+            <div class="pomo-presets-grid">
+              <button type="button" class="preset-pill" data-focus="25" data-short="5" data-long="15">
+                <span class="preset-name">Classic</span>
+                <span class="preset-sub">25 / 5m</span>
+              </button>
+              <button type="button" class="preset-pill" data-focus="50" data-short="10" data-long="20">
+                <span class="preset-name">Deep Work</span>
+                <span class="preset-sub">50 / 10m</span>
+              </button>
+              <button type="button" class="preset-pill" data-focus="90" data-short="20" data-long="30">
+                <span class="preset-name">Ultradian</span>
+                <span class="preset-sub">90 / 20m</span>
+              </button>
+              <button type="button" class="preset-pill" data-focus="15" data-short="3" data-long="10">
+                <span class="preset-name">Sprint</span>
+                <span class="preset-sub">15 / 3m</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Durations Config (minutes) -->
+          <div class="pomo-setting-section">
+            <label class="pomo-setting-label">
+              <span>Time Durations (Minutes)</span>
+            </label>
+            <div class="pomo-durations-grid">
+              <div class="pomo-input-card">
+                <span class="input-card-tag focus-tag">Focus</span>
+                <div class="number-stepper">
+                  <button type="button" class="btn-step" data-step-target="input-pomo-focus" data-step="-5">-</button>
+                  <input type="number" id="input-pomo-focus" min="1" max="180" value="25" />
+                  <button type="button" class="btn-step" data-step-target="input-pomo-focus" data-step="5">+</button>
+                </div>
+              </div>
+              <div class="pomo-input-card">
+                <span class="input-card-tag break-tag">Short Break</span>
+                <div class="number-stepper">
+                  <button type="button" class="btn-step" data-step-target="input-pomo-short" data-step="-1">-</button>
+                  <input type="number" id="input-pomo-short" min="1" max="60" value="5" />
+                  <button type="button" class="btn-step" data-step-target="input-pomo-short" data-step="1">+</button>
+                </div>
+              </div>
+              <div class="pomo-input-card">
+                <span class="input-card-tag long-break-tag">Long Break</span>
+                <div class="number-stepper">
+                  <button type="button" class="btn-step" data-step-target="input-pomo-long" data-step="-5">-</button>
+                  <input type="number" id="input-pomo-long" min="1" max="90" value="15" />
+                  <button type="button" class="btn-step" data-step-target="input-pomo-long" data-step="5">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cycles / Round Interval -->
+          <div class="pomo-setting-section">
+            <div class="pomo-row-setting">
+              <div class="pomo-setting-info">
+                <span class="setting-title">Long Break Interval</span>
+                <span class="setting-desc">Number of focus sessions before a long break</span>
+              </div>
+              <div class="number-stepper stepper-sm">
+                <button type="button" class="btn-step" data-step-target="input-pomo-interval" data-step="-1">-</button>
+                <input type="number" id="input-pomo-interval" min="1" max="12" value="4" />
+                <button type="button" class="btn-step" data-step-target="input-pomo-interval" data-step="1">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Automation & Sound Options -->
+          <div class="pomo-setting-section">
+            <label class="pomo-setting-label">
+              <span>Automation & Alerts</span>
+            </label>
+            <div class="pomo-toggles-list">
+              <label class="pomo-toggle-item">
+                <input type="checkbox" id="check-pomo-auto-breaks" />
+                <div class="toggle-custom-box"></div>
+                <div class="toggle-text-wrap">
+                  <span class="toggle-title">Auto-start Breaks</span>
+                  <span class="toggle-desc">Automatically begin break countdown after focus completes</span>
+                </div>
+              </label>
+
+              <label class="pomo-toggle-item">
+                <input type="checkbox" id="check-pomo-auto-focus" />
+                <div class="toggle-custom-box"></div>
+                <div class="toggle-text-wrap">
+                  <span class="toggle-title">Auto-start Focus</span>
+                  <span class="toggle-desc">Automatically begin focus countdown after break completes</span>
+                </div>
+              </label>
+
+              <div class="pomo-dropdown-row">
+                <div class="toggle-text-wrap">
+                  <span class="toggle-title">Alarm Sound</span>
+                  <span class="toggle-desc">Chime played on session completion</span>
+                </div>
+                <div class="sound-select-wrapper">
+                  <select id="select-pomo-sound" class="pomo-select">
+                    <option value="singingBowl">Tibetan Singing Bowl (528Hz)</option>
+                    <option value="gentleChime">Gentle Marimba Chime</option>
+                    <option value="digitalBeep">Digital Electronic Beep</option>
+                    <option value="none">Mute (No sound)</option>
+                  </select>
+                  <button type="button" class="btn-preview-sound" id="btn-preview-sound" title="Preview Sound">
+                    <i data-lucide="volume-2"></i>
+                  </button>
+                </div>
+              </div>
+
+              <label class="pomo-toggle-item">
+                <input type="checkbox" id="check-pomo-desktop-notif" />
+                <div class="toggle-custom-box"></div>
+                <div class="toggle-text-wrap">
+                  <span class="toggle-title">Desktop Notifications</span>
+                  <span class="toggle-desc">Show browser desktop notification when timer finishes</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="pomo-settings-actions">
+            <button type="button" class="btn-secondary-sm" id="btn-pomo-reset-defaults">Reset Defaults</button>
+            <div class="pomo-actions-right">
+              <button type="button" class="btn-cancel-sm" id="btn-pomo-cancel">Cancel</button>
+              <button type="button" class="btn-primary-sm" id="btn-pomo-save">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Codeshare Fullscreen Modal -->
+    <div class="codeshare-fullscreen-modal" id="codeshare-fullscreen-modal" style="display: none;">
+      <div class="codeshare-fs-container">
+        <!-- Fullscreen Header -->
+        <div class="codeshare-fs-header">
+          <div class="codeshare-fs-header-left">
+            <div class="codeshare-fs-brand">
+              <i data-lucide="code-2" class="fs-brand-icon"></i>
+              <h3>Codeshare</h3>
+            </div>
+            <div class="codeshare-lang-select-wrap">
+              <select id="select-codeshare-lang-fs" class="codeshare-lang-select" title="Syntax Mode">
+                <option value="text" selected>Plain Text</option>
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+                <option value="python">Python</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="json">JSON</option>
+                <option value="markdown">Markdown</option>
+                <option value="sql">SQL</option>
+                <option value="cpp">C++</option>
+              </select>
+            </div>
+            <div class="codeshare-sync-status" id="codeshare-sync-status-fs">
+              <span class="pulse-dot"></span>
+              <span class="sync-status-text">Live Sync</span>
+            </div>
+            <div class="codeshare-typing-indicator" id="codeshare-typing-indicator-fs" style="display: none;">
+              <span class="typing-dots"><span></span><span></span><span></span></span>
+              <span class="typing-name" id="codeshare-typing-text-fs">typing...</span>
+            </div>
+          </div>
+
+          <div class="codeshare-fs-header-right">
+            <!-- Font Size Controls -->
+            <div class="codeshare-font-stepper">
+              <button type="button" class="btn-fs-font" id="btn-codeshare-font-dec" title="Decrease font size (A-)">A-</button>
+              <span class="fs-font-label" id="codeshare-font-label">14px</span>
+              <button type="button" class="btn-fs-font" id="btn-codeshare-font-inc" title="Increase font size (A+)">A+</button>
+            </div>
+
+            <button type="button" class="codeshare-fs-btn" id="btn-codeshare-copy-fs" title="Copy to Clipboard">
+              <i data-lucide="copy"></i>
+              <span>Copy</span>
+            </button>
+
+            <button type="button" class="codeshare-fs-btn" id="btn-codeshare-download-fs" title="Download Snippet">
+              <i data-lucide="download"></i>
+              <span>Download</span>
+            </button>
+
+            <button type="button" class="codeshare-fs-btn codeshare-fs-btn-danger" id="btn-codeshare-clear-fs" title="Clear Pad">
+              <i data-lucide="trash-2"></i>
+              <span>Clear</span>
+            </button>
+
+            <button type="button" class="codeshare-fs-btn codeshare-btn-minimize" id="btn-codeshare-exit-fs" title="Exit Fullscreen (Esc)">
+              <i data-lucide="minimize-2"></i>
+              <span>Collapse</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Fullscreen Editor Area -->
+        <div class="codeshare-fs-body">
+          <div class="codeshare-editor-wrapper codeshare-fs-editor-wrapper">
+            <div class="codeshare-gutter codeshare-fs-gutter" id="codeshare-gutter-fs" aria-hidden="true">
+              <div class="gutter-num">1</div>
+            </div>
+            <textarea 
+              id="codeshare-textarea-fs" 
+              class="codeshare-textarea codeshare-fs-textarea" 
+              placeholder="Type raw text, paste code, or share snippets together..." 
+              spellcheck="false" 
+              autocomplete="off" 
+              autocorrect="off" 
+              autocapitalize="off"></textarea>
+          </div>
+        </div>
+
+        <!-- Fullscreen Footer -->
+        <div class="codeshare-fs-footer">
+          <div class="codeshare-stats" id="codeshare-stats-fs">
+            <span id="codeshare-stat-lines-fs">1 line</span>
+            <span class="stat-sep">•</span>
+            <span id="codeshare-stat-words-fs">0 words</span>
+            <span class="stat-sep">•</span>
+            <span id="codeshare-stat-chars-fs">0 chars</span>
+          </div>
+          <div class="codeshare-fs-hints">
+            <span>Press <kbd>Tab</kbd> to indent • <kbd>Shift+Tab</kbd> to outdent • <kbd>Esc</kbd> to collapse</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Welcome Modal (Entry point) -->
+    <div class="modal-backdrop welcome-backdrop" id="welcome-modal">
+      <div class="modal-card welcome-card">
+        <div class="welcome-header">
+          <div class="welcome-logo-container">
+            <img src="/logo/logo.jpeg" alt="Bored!" class="welcome-logo-img" />
+          </div>
+          <h2>Bored?</h2>
+        </div>
+
+        <div class="welcome-form">
+          <!-- Avatar preview positioned directly above the username input, no headings or labels -->
+          <div class="welcome-avatar-wrap">
+            <div class="welcome-initials-preview initials-avatar" id="welcome-initials-preview">AR</div>
+          </div>
+
+          <div class="form-group">
+            <input type="text" id="input-display-name" placeholder="Name" maxlength="24" value="Alex" />
+          </div>
+
+          <div class="join-error-banner" id="join-error-banner" style="display: none;"></div>
+
+          <div class="welcome-actions">
+            <button class="btn-welcome-primary" id="btn-create-new-room">
+              <i data-lucide="plus" class="btn-icon"></i>
+              <span>Create Room</span>
+            </button>
+
+            <div class="or-divider"><span>OR</span></div>
+
+            <div class="join-room-row">
+              <input type="text" id="input-join-room-code" placeholder="Room code" />
+              <button class="btn-welcome-secondary" id="btn-join-room-submit">Join</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Entry Module -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
