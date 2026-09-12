@@ -58,8 +58,8 @@
         </div>
 
         <div class="my-profile-chip" id="my-profile-chip">
-          <span class="avatar-badge initials-avatar" id="header-user-avatar">AR</span>
-          <span class="profile-name" id="header-user-name">Alex</span>
+          <span class="avatar-badge initials-avatar" id="header-user-avatar">?</span>
+          <span class="profile-name" id="header-user-name">Guest</span>
           <span class="profile-status-tag" id="header-focus-tag">Bored</span>
         </div>
       </div>
@@ -80,8 +80,8 @@
             <div class="tile-video-wrapper">
               <video id="local-video" autoplay muted playsinline></video>
               <div class="avatar-fallback" id="local-avatar-fallback">
-                <div class="avatar-fallback-icon initials-avatar" id="local-fallback-icon">AR</div>
-                <div class="avatar-fallback-name" id="local-fallback-name">Alex</div>
+                <div class="avatar-fallback-icon initials-avatar" id="local-fallback-icon">?</div>
+                <div class="avatar-fallback-name" id="local-fallback-name">You</div>
               </div>
               <div class="speaking-indicator-ring" id="local-speaking-ring"></div>
             </div>
@@ -89,8 +89,8 @@
             <!-- Tile Overlay Header -->
             <div class="tile-overlay-top">
               <div class="tile-user-info">
-                <span class="tile-avatar initials-avatar" id="local-tile-avatar">AR</span>
-                <span class="tile-name" id="local-tile-name">Alex (Host)</span>
+                <span class="tile-avatar initials-avatar" id="local-tile-avatar">?</span>
+                <span class="tile-name" id="local-tile-name">You (Host)</span>
                 <span class="tile-badge-me">YOU</span>
                 <div class="speaking-wave" id="local-speaking-wave" style="display: none;">
                   <span></span><span></span><span></span>
@@ -878,29 +878,101 @@
         </div>
 
         <div class="welcome-form">
-          <!-- Avatar preview positioned directly above the username input, no headings or labels -->
-          <div class="welcome-avatar-wrap">
-            <div class="welcome-initials-preview initials-avatar" id="welcome-initials-preview">AR</div>
+          <!-- Identity row: avatar + name -->
+          <div class="welcome-identity-row">
+            <div class="welcome-initials-preview initials-avatar" id="welcome-initials-preview">?</div>
+            <div class="form-group welcome-name-group">
+              <input type="text" id="input-display-name" placeholder="Enter your name" maxlength="24" autocomplete="off" />
+            </div>
           </div>
 
-          <div class="form-group">
-            <input type="text" id="input-display-name" placeholder="Name" maxlength="24" value="Alex" />
+          <!-- Video Preview Tile -->
+          <div class="welcome-video-wrap" id="welcome-video-wrap">
+            <video id="welcome-preview-video" autoplay muted playsinline class="welcome-preview-vid"></video>
+            <div class="welcome-video-off" id="welcome-video-off">
+              <div class="welcome-video-off-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </div>
+              <span>Camera off</span>
+            </div>
+
+            <!-- Media control bar inside video tile -->
+            <div class="welcome-media-bar">
+              <!-- Mic toggle -->
+              <button class="welcome-media-btn mic-off" id="btn-welcome-mic-toggle" title="Toggle microphone">
+                <svg class="icon-mic-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                <svg class="icon-mic-off" style="display:none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                <span class="welcome-media-label">Mic</span>
+              </button>
+
+              <!-- Mic level visualizer -->
+              <div class="welcome-mic-level" id="welcome-mic-level">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+
+              <!-- Cam toggle -->
+              <button class="welcome-media-btn cam-off" id="btn-welcome-cam-toggle" title="Toggle camera">
+                <svg class="icon-cam-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                <svg class="icon-cam-off" style="display:none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                <span class="welcome-media-label">Cam</span>
+              </button>
+
+              <div class="welcome-media-spacer"></div>
+
+              <!-- Settings gear -->
+              <button class="welcome-media-btn welcome-settings-btn" id="btn-welcome-settings" title="Device settings">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span class="welcome-media-label">Settings</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Device settings panel (collapsed by default) -->
+          <div class="welcome-device-settings" id="welcome-device-settings" style="display:none;">
+            <div class="device-setting-row">
+              <label class="device-setting-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+                Microphone
+              </label>
+              <select id="select-welcome-mic" class="device-select"></select>
+            </div>
+            <div class="device-setting-row">
+              <label class="device-setting-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                Camera
+              </label>
+              <select id="select-welcome-cam" class="device-select"></select>
+            </div>
+            <div class="device-setting-row">
+              <label class="device-setting-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                Speaker
+              </label>
+              <select id="select-welcome-speaker" class="device-select"></select>
+            </div>
           </div>
 
           <div class="join-error-banner" id="join-error-banner" style="display: none;"></div>
 
           <div class="welcome-actions">
-            <button class="btn-welcome-primary" id="btn-create-new-room">
-              <i data-lucide="plus" class="btn-icon"></i>
-              <span>Create Room</span>
-            </button>
+            <!-- JOIN is primary / prominent -->
+            <div class="join-room-section">
+              <div class="join-room-row">
+                <input type="text" id="input-join-room-code" placeholder="Room code or invite link" />
+                <button class="btn-welcome-primary btn-join-prominent" id="btn-join-room-submit">
+                  <i data-lucide="log-in" class="btn-icon"></i>
+                  <span>Join Room</span>
+                </button>
+              </div>
+            </div>
 
             <div class="or-divider"><span>OR</span></div>
 
-            <div class="join-room-row">
-              <input type="text" id="input-join-room-code" placeholder="Room code" />
-              <button class="btn-welcome-secondary" id="btn-join-room-submit">Join</button>
-            </div>
+            <!-- Create Room is secondary -->
+            <button class="btn-welcome-secondary btn-create-secondary" id="btn-create-new-room">
+              <i data-lucide="plus" class="btn-icon"></i>
+              <span>Create New Room</span>
+            </button>
           </div>
         </div>
       </div>

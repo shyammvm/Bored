@@ -3019,9 +3019,8 @@ input[type="range"]:focus {
   flex: 1;
 }
 
-/* Welcome Card (Ultra Minimal) */
 .welcome-card {
-  max-width: 440px;
+  max-width: 460px;
   padding: 32px 28px;
 }
 
@@ -3065,23 +3064,28 @@ input[type="range"]:focus {
 .welcome-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
-.welcome-avatar-wrap {
+/* Identity row: avatar circle + name input side by side */
+.welcome-identity-row {
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-bottom: 2px;
+  gap: 14px;
+}
+
+.welcome-name-group {
+  flex: 1;
 }
 
 .welcome-initials-preview {
-  width: 76px;
-  height: 76px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 1px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3095,6 +3099,140 @@ input[type="range"]:focus {
   transform: scale(1.06);
 }
 
+/* Video preview tile */
+.welcome-video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-0);
+  border: 1px solid var(--border-subtle);
+}
+
+.welcome-preview-vid {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scaleX(-1); /* Mirror like a real camera preview */
+}
+
+.welcome-video-off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--surface-0);
+}
+
+.welcome-video-off-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.welcome-cam-toggle {
+  /* kept for backward compat, hidden now */
+  display: none;
+}
+
+/* Media control bar at bottom of video preview */
+.welcome-media-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+}
+
+.welcome-media-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 5px 10px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+}
+
+.welcome-media-btn:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* Active (on) state — green tint */
+.welcome-media-btn.media-on {
+  background: rgba(34, 197, 94, 0.22);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+}
+
+/* Muted (off) state — red tint */
+.welcome-media-btn.mic-off,
+.welcome-media-btn.cam-off {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.welcome-media-spacer {
+  flex: 1;
+}
+
+.welcome-settings-btn {
+  background: rgba(255,255,255,0.1);
+}
+
+.welcome-settings-btn.settings-open {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: var(--accent-primary);
+}
+
+/* Mic level bars */
+.welcome-mic-level {
+  display: none;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+
+.welcome-mic-level.mic-active {
+  display: flex;
+}
+
+.welcome-mic-level span {
+  display: block;
+  width: 3px;
+  border-radius: 2px;
+  background: #4ade80;
+  height: 4px;
+  transition: height 0.08s ease;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -3103,7 +3241,6 @@ input[type="range"]:focus {
 }
 
 .form-group input {
-  text-align: center;
   font-size: 15px;
   padding: 10px 14px;
 }
@@ -3123,8 +3260,80 @@ input[type="range"]:focus {
 .welcome-actions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Device settings collapsible panel */
+.welcome-device-settings {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: slideDown 0.18s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.device-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.device-setting-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  min-width: 88px;
+  flex-shrink: 0;
+}
+
+.device-select {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: var(--font-body);
+  padding: 5px 8px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  min-width: 0;
+}
+
+.device-select:hover {
+  border-color: var(--border-hover);
+}
+
+.device-select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.device-select option {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+/* Join section row */
+.join-room-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .btn-welcome-primary {
@@ -3165,6 +3374,7 @@ input[type="range"]:focus {
   padding: 0 10px;
 }
 
+/* Join row: code input + join button in one row */
 .join-room-row {
   display: flex;
   gap: 8px;
@@ -3174,18 +3384,42 @@ input[type="range"]:focus {
   flex: 1;
 }
 
+/* Prominent join button (primary style) */
+.btn-join-prominent {
+  white-space: nowrap;
+  padding: 13px 18px;
+  font-size: 14px;
+}
+
+/* Demoted Create Room button (secondary style) */
 .btn-welcome-secondary {
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
-  color: #fff;
-  font-weight: 600;
-  padding: 0 20px;
-  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  transition: all 0.18s ease;
 }
 
 .btn-welcome-secondary:hover {
   background: var(--surface-3);
   border-color: var(--border-hover);
+  color: #fff;
+}
+
+.btn-create-secondary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.btn-create-secondary:hover {
+  color: #fff;
 }
 
 /* Animations */

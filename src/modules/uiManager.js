@@ -449,9 +449,10 @@ class UIManager {
     const nameInput = document.getElementById('input-display-name');
     const previewEl = document.getElementById('welcome-initials-preview');
     const updatePreview = () => {
-      const name = nameInput.value.trim() || 'Alex';
-      const initials = getInitials(name);
-      const grad = getAvatarGradient(name);
+      const name = nameInput.value.trim();
+      // Show '?' placeholder avatar when name is empty
+      const initials = name ? getInitials(name) : '?';
+      const grad = name ? getAvatarGradient(name) : 'linear-gradient(135deg, #4b5563, #1f2937)';
 
       if (previewEl) {
         previewEl.textContent = initials;
@@ -477,16 +478,218 @@ class UIManager {
       }
 
       const headerName = document.getElementById('header-user-name');
-      if (headerName) headerName.textContent = name;
+      if (headerName) headerName.textContent = name || 'Guest';
       const localTileName = document.getElementById('local-tile-name');
-      if (localTileName) localTileName.textContent = `${name} (Host)`;
+      if (localTileName) localTileName.textContent = name ? `${name} (Host)` : 'You (Host)';
       const localFallbackName = document.getElementById('local-fallback-name');
-      if (localFallbackName) localFallbackName.textContent = name;
+      if (localFallbackName) localFallbackName.textContent = name || 'You';
     };
     if (nameInput && previewEl) {
       nameInput.addEventListener('input', updatePreview);
-      updatePreview();
+      updatePreview(); // Run once with empty name
     }
+
+    // ── Welcome modal media preview ────────────────────────────────────────
+    this._welcomeCamStream = null;
+    this._welcomeMicStream = null;
+    this._welcomeCamOn = false;
+    this._welcomeMicOn = false;
+    this._welcomeMicAnalyser = null;
+    this._welcomeMicLevelRaf = null;
+    this._welcomeSettingsOpen = false;
+
+    // Prefer stored device IDs from mediaManager
+    this._welcomeSelectedMicId = localStorage.getItem('preferred_audio_input') || null;
+    this._welcomeSelectedCamId = localStorage.getItem('preferred_video_input') || null;
+    this._welcomeSelectedSpeakerId = localStorage.getItem('preferred_audio_output') || null;
+
+    const welcomePreviewVid  = document.getElementById('welcome-preview-video');
+    const welcomeVideoOff    = document.getElementById('welcome-video-off');
+    const welcomeMicBtn      = document.getElementById('btn-welcome-mic-toggle');
+    const welcomeCamBtn      = document.getElementById('btn-welcome-cam-toggle');
+    const welcomeSettingsBtn = document.getElementById('btn-welcome-settings');
+    const welcomeSettingsPanel = document.getElementById('welcome-device-settings');
+    const micLevelEl         = document.getElementById('welcome-mic-level');
+    const micLevelBars       = micLevelEl ? Array.from(micLevelEl.querySelectorAll('span')) : [];
+
+    // Helper: set mic button visual state
+    const setMicBtnState = (on) => {
+      if (!welcomeMicBtn) return;
+      welcomeMicBtn.querySelector('.icon-mic-on').style.display  = on ? 'inline' : 'none';
+      welcomeMicBtn.querySelector('.icon-mic-off').style.display = on ? 'none'   : 'inline';
+      welcomeMicBtn.querySelector('.welcome-media-label').textContent = on ? 'Mic On' : 'Mic Off';
+      welcomeMicBtn.classList.toggle('media-on', on);
+      welcomeMicBtn.classList.toggle('mic-off', !on);
+      if (micLevelEl) micLevelEl.classList.toggle('mic-active', on);
+    };
+
+    // Helper: set cam button visual state
+    const setCamBtnState = (on) => {
+      if (!welcomeCamBtn) return;
+      welcomeCamBtn.querySelector('.icon-cam-on').style.display  = on ? 'inline' : 'none';
+      welcomeCamBtn.querySelector('.icon-cam-off').style.display = on ? 'none'   : 'inline';
+      welcomeCamBtn.querySelector('.welcome-media-label').textContent = on ? 'Cam On' : 'Cam Off';
+      welcomeCamBtn.classList.toggle('media-on', on);
+      welcomeCamBtn.classList.toggle('cam-off', !on);
+      if (welcomeVideoOff) welcomeVideoOff.style.display = on ? 'none' : 'flex';
+    };
+
+    // Mic level animation
+    const animateMicLevel = () => {
+      if (!this._welcomeMicAnalyser || !this._welcomeMicOn) return;
+      const data = new Uint8Array(this._welcomeMicAnalyser.frequencyBinCount);
+      this._welcomeMicAnalyser.getByteFrequencyData(data);
+      const avg = data.reduce((s, v) => s + v, 0) / data.length;
+      const levels = [0.2, 0.5, 1.0, 0.5, 0.2];
+      micLevelBars.forEach((bar, i) => {
+        const h = Math.max(2, Math.min(16, avg * levels[i] * 0.22));
+        bar.style.height = h + 'px';
+      });
+      this._welcomeMicLevelRaf = requestAnimationFrame(animateMicLevel);
+    };
+
+    // Stop mic preview
+    const stopMicPreview = () => {
+      if (this._welcomeMicLevelRaf) { cancelAnimationFrame(this._welcomeMicLevelRaf); this._welcomeMicLevelRaf = null; }
+      if (this._welcomeMicStream) { this._welcomeMicStream.getTracks().forEach(t => t.stop()); this._welcomeMicStream = null; }
+      this._welcomeMicAnalyser = null;
+      this._welcomeMicOn = false;
+      setMicBtnState(false);
+      micLevelBars.forEach(b => { b.style.height = '4px'; });
+    };
+
+    // Stop cam preview
+    const stopCamPreview = () => {
+      if (this._welcomeCamStream) { this._welcomeCamStream.getTracks().forEach(t => t.stop()); this._welcomeCamStream = null; }
+      if (welcomePreviewVid) { welcomePreviewVid.srcObject = null; welcomePreviewVid.style.display = 'none'; }
+      this._welcomeCamOn = false;
+      setCamBtnState(false);
+    };
+
+    // Start mic preview
+    const startMicPreview = async (deviceId) => {
+      stopMicPreview();
+      try {
+        const constraints = { audio: deviceId ? { deviceId: { exact: deviceId } } : true, video: false };
+        this._welcomeMicStream = await navigator.mediaDevices.getUserMedia(constraints);
+        this._welcomeMicOn = true;
+        setMicBtnState(true);
+        // Build analyser for level bars
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          const src = ctx.createMediaStreamSource(this._welcomeMicStream);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 64;
+          src.connect(analyser);
+          this._welcomeMicAnalyser = analyser;
+          animateMicLevel();
+        }
+      } catch (err) {
+        console.warn('[UIManager] Could not start mic preview:', err);
+      }
+    };
+
+    // Start cam preview
+    const startCamPreview = async (deviceId) => {
+      stopCamPreview();
+      try {
+        const constraints = { video: deviceId ? { deviceId: { exact: deviceId } } : true, audio: false };
+        this._welcomeCamStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (welcomePreviewVid) {
+          welcomePreviewVid.srcObject = this._welcomeCamStream;
+          welcomePreviewVid.style.display = 'block';
+        }
+        this._welcomeCamOn = true;
+        setCamBtnState(true);
+      } catch (err) {
+        console.warn('[UIManager] Could not start camera preview:', err);
+      }
+    };
+
+    // Mic toggle
+    if (welcomeMicBtn) {
+      welcomeMicBtn.addEventListener('click', async () => {
+        if (this._welcomeMicOn) { stopMicPreview(); }
+        else { await startMicPreview(this._welcomeSelectedMicId); }
+      });
+    }
+
+    // Cam toggle
+    if (welcomeCamBtn) {
+      welcomeCamBtn.addEventListener('click', async () => {
+        if (this._welcomeCamOn) { stopCamPreview(); }
+        else { await startCamPreview(this._welcomeSelectedCamId); }
+      });
+    }
+
+    // Settings toggle — populate device dropdowns on first open
+    let devicesPopulated = false;
+    const populateDevices = async () => {
+      if (devicesPopulated) return;
+      devicesPopulated = true;
+      try {
+        // Request permission to get labelled devices
+        await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(() => {});
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const mics      = devices.filter(d => d.kind === 'audioinput');
+        const cams      = devices.filter(d => d.kind === 'videoinput');
+        const speakers  = devices.filter(d => d.kind === 'audiooutput');
+
+        const fillSelect = (selId, list, storedId) => {
+          const sel = document.getElementById(selId);
+          if (!sel) return;
+          sel.innerHTML = '';
+          if (!list.length) {
+            sel.innerHTML = '<option value="">No devices found</option>';
+            return;
+          }
+          list.forEach((d, i) => {
+            const opt = document.createElement('option');
+            opt.value = d.deviceId;
+            opt.textContent = d.label || `Device ${i + 1}`;
+            if (storedId ? d.deviceId === storedId : i === 0) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        };
+
+        fillSelect('select-welcome-mic',     mics,     this._welcomeSelectedMicId);
+        fillSelect('select-welcome-cam',     cams,     this._welcomeSelectedCamId);
+        fillSelect('select-welcome-speaker', speakers, this._welcomeSelectedSpeakerId);
+
+        // Wire change handlers
+        const micSel = document.getElementById('select-welcome-mic');
+        const camSel = document.getElementById('select-welcome-cam');
+        const spkSel = document.getElementById('select-welcome-speaker');
+
+        if (micSel) micSel.addEventListener('change', async () => {
+          this._welcomeSelectedMicId = micSel.value;
+          try { localStorage.setItem('preferred_audio_input', micSel.value); } catch(e) {}
+          if (this._welcomeMicOn) { await startMicPreview(micSel.value); }
+        });
+        if (camSel) camSel.addEventListener('change', async () => {
+          this._welcomeSelectedCamId = camSel.value;
+          try { localStorage.setItem('preferred_video_input', camSel.value); } catch(e) {}
+          if (this._welcomeCamOn) { await startCamPreview(camSel.value); }
+        });
+        if (spkSel) spkSel.addEventListener('change', () => {
+          this._welcomeSelectedSpeakerId = spkSel.value;
+          try { localStorage.setItem('preferred_audio_output', spkSel.value); } catch(e) {}
+        });
+      } catch (err) {
+        console.warn('[UIManager] Could not enumerate devices:', err);
+      }
+    };
+
+    if (welcomeSettingsBtn && welcomeSettingsPanel) {
+      welcomeSettingsBtn.addEventListener('click', async () => {
+        this._welcomeSettingsOpen = !this._welcomeSettingsOpen;
+        welcomeSettingsPanel.style.display = this._welcomeSettingsOpen ? 'flex' : 'none';
+        welcomeSettingsBtn.classList.toggle('settings-open', this._welcomeSettingsOpen);
+        if (this._welcomeSettingsOpen) await populateDevices();
+      });
+    }
+
 
     // Create Room button
     document.getElementById('btn-create-new-room').addEventListener('click', () => {
@@ -1865,8 +2068,7 @@ class UIManager {
       const roomInput = document.getElementById('input-join-room-code');
       if (roomInput) roomInput.value = clean;
       const nameInput = document.getElementById('input-display-name');
-      if (nameInput && nameInput.value === 'Alex') {
-        nameInput.value = '';
+      if (nameInput && !nameInput.value.trim()) {
         nameInput.placeholder = 'Your Name';
       }
       const subtitle = document.querySelector('.welcome-header p');
@@ -1879,9 +2081,27 @@ class UIManager {
   async handleCreateRoom() {
     playClick();
     this.clearJoinError();
-    const name = document.getElementById('input-display-name').value.trim() || 'Alex';
+    const name = document.getElementById('input-display-name').value.trim();
+    if (!name) {
+      this.showJoinError('Please enter your name before creating a room!');
+      document.getElementById('input-display-name').focus();
+      return;
+    }
     const avatar = getInitials(name);
     const grad = getAvatarGradient(name);
+
+    // Stop welcome media previews before starting room stream
+    if (this._welcomeCamStream) {
+      this._welcomeCamStream.getTracks().forEach(t => t.stop());
+      this._welcomeCamStream = null;
+      this._welcomeCamOn = false;
+    }
+    if (this._welcomeMicLevelRaf) { cancelAnimationFrame(this._welcomeMicLevelRaf); this._welcomeMicLevelRaf = null; }
+    if (this._welcomeMicStream) {
+      this._welcomeMicStream.getTracks().forEach(t => t.stop());
+      this._welcomeMicStream = null;
+      this._welcomeMicOn = false;
+    }
 
     document.getElementById('header-user-name').textContent = name;
     const headerAvatar = document.getElementById('header-user-avatar');
@@ -1934,10 +2154,28 @@ class UIManager {
   async handleJoinRoom() {
     playClick();
     this.clearJoinError();
-    const name = document.getElementById('input-display-name').value.trim() || 'Alex';
+    const name = document.getElementById('input-display-name').value.trim();
+    if (!name) {
+      this.showJoinError('Please enter your name before joining!');
+      document.getElementById('input-display-name').focus();
+      return;
+    }
     const avatar = getInitials(name);
     const grad = getAvatarGradient(name);
     const rawInput = document.getElementById('input-join-room-code').value.trim();
+
+    // Stop welcome media previews before starting room stream
+    if (this._welcomeCamStream) {
+      this._welcomeCamStream.getTracks().forEach(t => t.stop());
+      this._welcomeCamStream = null;
+      this._welcomeCamOn = false;
+    }
+    if (this._welcomeMicLevelRaf) { cancelAnimationFrame(this._welcomeMicLevelRaf); this._welcomeMicLevelRaf = null; }
+    if (this._welcomeMicStream) {
+      this._welcomeMicStream.getTracks().forEach(t => t.stop());
+      this._welcomeMicStream = null;
+      this._welcomeMicOn = false;
+    }
 
     if (!rawInput) {
       this.showJoinError('Please enter a room code or invite link!');
