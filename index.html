@@ -978,6 +978,123 @@
       </div>
     </div>
 
+    <!-- Mobile Device Blocker Overlay -->
+    <div class="mobile-block-overlay" id="mobile-block-overlay" style="display: none;">
+      <div class="mobile-block-backdrop-ambient glow-primary"></div>
+      <div class="mobile-block-backdrop-ambient glow-accent"></div>
+
+      <div class="mobile-block-card">
+        <!-- Header row with logo and badge -->
+        <div class="mobile-block-top">
+          <div class="mobile-brand-group">
+            <div class="mobile-brand-logo-wrap">
+              <img src="/logo/logo.jpeg" alt="Bored!" class="mobile-brand-logo" />
+            </div>
+            <div class="mobile-brand-text">
+              <span class="mobile-brand-title">Bored!</span>
+              <span class="mobile-brand-sub">Virtual Coworking</span>
+            </div>
+          </div>
+          <div class="mobile-badge-desktop">
+            <i data-lucide="monitor" class="mobile-badge-icon"></i>
+            <span>Desktop Only</span>
+          </div>
+        </div>
+
+        <!-- Animated Device Transition Visual -->
+        <div class="mobile-device-visual">
+          <div class="device-icon-box phone-box">
+            <i data-lucide="smartphone" class="device-svg"></i>
+            <span class="device-sublabel">Mobile</span>
+          </div>
+          <div class="device-arrow-box">
+            <span class="device-pulse-dot"></span>
+            <div class="device-arrow-track">
+              <i data-lucide="arrow-right" class="arrow-svg"></i>
+            </div>
+            <span class="device-arrow-text">Open on</span>
+          </div>
+          <div class="device-icon-box laptop-box">
+            <i data-lucide="laptop" class="device-svg"></i>
+            <span class="device-sublabel">Computer</span>
+          </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="mobile-block-body">
+          <h2 class="mobile-block-heading">Built for Your Desk</h2>
+
+          <!-- Room Invite Banner (Shown dynamically when ?room= is present) -->
+          <div class="mobile-room-pill" id="mobile-invite-pill" style="display: none;">
+            <span class="room-pill-indicator"></span>
+            <span class="room-pill-text">Room invite: <strong id="mobile-room-code-tag">----</strong></span>
+          </div>
+
+          <p class="mobile-block-summary" id="mobile-block-desc">
+            Bored? is an intensive, peer-to-peer virtual workspace designed for desktop screens. Multi-stream video mesh, collaborative coding, and screen sharing require a desktop or laptop browser.
+          </p>
+
+          <!-- Core Desktop Features Chips -->
+          <div class="mobile-features-grid">
+            <div class="m-feature-chip">
+              <i data-lucide="code-2" class="chip-icon"></i>
+              <span>Live Codeshare</span>
+            </div>
+            <div class="m-feature-chip">
+              <i data-lucide="share-2" class="chip-icon"></i>
+              <span>Screen Sharing</span>
+            </div>
+            <div class="m-feature-chip">
+              <i data-lucide="timer" class="chip-icon"></i>
+              <span>Dual Pomodoro</span>
+            </div>
+            <div class="m-feature-chip">
+              <i data-lucide="music" class="chip-icon"></i>
+              <span>Synced DJ Room</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="mobile-actions-group">
+            <button type="button" class="btn-mobile-action btn-mobile-copy" id="btn-mobile-copy-link">
+              <i data-lucide="copy" class="btn-action-icon"></i>
+              <span id="mobile-copy-btn-text">Copy Room Link</span>
+            </button>
+
+            <button type="button" class="btn-mobile-action btn-mobile-share" id="btn-mobile-share-link" style="display: none;">
+              <i data-lucide="share-2" class="btn-action-icon"></i>
+              <span>Share to My Computer</span>
+            </button>
+          </div>
+
+          <!-- Quick Copy Toast Feedback -->
+          <div class="mobile-copy-feedback" id="mobile-copy-toast">
+            <i data-lucide="check" class="feedback-icon"></i>
+            <span>Link copied to clipboard! Paste it on your computer.</span>
+          </div>
+
+          <!-- Collapsible "Why Desktop?" Explanation -->
+          <details class="mobile-why-details">
+            <summary class="mobile-why-summary">
+              <span>Why is a computer required?</span>
+              <i data-lucide="chevron-down" class="why-chevron"></i>
+            </summary>
+            <div class="mobile-why-content">
+              <p>
+                <strong>WebRTC Mesh:</strong> Bored? connects you directly to coworkers without servers, which requires desktop processing to prevent phone battery drain.
+              </p>
+              <p>
+                <strong>Screen Sharing API:</strong> Mobile browsers (especially iOS Safari) do not allow sharing your screen.
+              </p>
+              <p>
+                <strong>Desktop Workspace:</strong> Collaborative typing and multitasking need full keyboard and mouse precision.
+              </p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Entry Module -->
     <script type="module" src="/src/main.js"></script>
   </body>

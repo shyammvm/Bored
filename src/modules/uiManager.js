@@ -35,6 +35,7 @@ class UIManager {
     this.updatePomodoroDisplay();
     this.initCodeshare();
     this.initSidebarResize();
+    this.initMobileBlocker();
     renderIcons();
   }
 
@@ -3005,6 +3006,113 @@ class UIManager {
       toggleBtn.addEventListener('click', () => {
         playClick();
         toggleWidth();
+      });
+    }
+  }
+
+  isMobileDevice() {
+    const ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+    const isMobileUa = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|crios/i.test(ua);
+    const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+    const isNarrow = window.innerWidth <= 768;
+    return isMobileUa || (isNarrow && isTouch) || isNarrow;
+  }
+
+  initMobileBlocker() {
+    const overlay = document.getElementById('mobile-block-overlay');
+    if (!overlay) return;
+
+    const checkAndToggle = () => {
+      const isMobile = this.isMobileDevice();
+      if (isMobile) {
+        document.body.classList.add('mobile-blocked');
+        overlay.style.display = 'flex';
+
+        // Check for room invite parameter
+        const params = new URLSearchParams(window.location.search);
+        const room = params.get('room');
+        const invitePill = document.getElementById('mobile-invite-pill');
+        const roomCodeTag = document.getElementById('mobile-room-code-tag');
+        const desc = document.getElementById('mobile-block-desc');
+
+        if (room) {
+          const clean = cleanRoomCode(room);
+          if (invitePill && roomCodeTag) {
+            invitePill.style.display = 'inline-flex';
+            roomCodeTag.textContent = clean;
+          }
+          if (desc) {
+            desc.innerHTML = `You've been invited to room <strong>#${this.escapeHtml(clean)}</strong>. Bored? is a desktop virtual coworking space. Open this link on your computer to join your coworkers.`;
+          }
+        } else {
+          if (invitePill) invitePill.style.display = 'none';
+        }
+      } else {
+        document.body.classList.remove('mobile-blocked');
+        overlay.style.display = 'none';
+      }
+    };
+
+    // Initial check
+    checkAndToggle();
+
+    // Listen on resize & orientation change
+    window.addEventListener('resize', checkAndToggle);
+    window.addEventListener('orientationchange', checkAndToggle);
+
+    // Copy link button handler
+    const copyBtn = document.getElementById('btn-mobile-copy-link');
+    const toast = document.getElementById('mobile-copy-toast');
+    const copyText = document.getElementById('mobile-copy-btn-text');
+
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        playClick();
+        const url = window.location.href;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+          } else {
+            const input = document.createElement('input');
+            input.value = url;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+          }
+          if (copyText) copyText.textContent = 'Link Copied!';
+          if (toast) {
+            toast.classList.add('show');
+            setTimeout(() => {
+              toast.classList.remove('show');
+              if (copyText) copyText.textContent = 'Copy Room Link';
+            }, 3000);
+          }
+        } catch (err) {
+          window.prompt('Copy this room link to your clipboard:', url);
+        }
+      });
+    }
+
+    // Native Web Share API (supported on iOS Safari, Chrome Android, etc.)
+    const shareBtn = document.getElementById('btn-mobile-share-link');
+    if (shareBtn && typeof navigator.share === 'function') {
+      shareBtn.style.display = 'inline-flex';
+      shareBtn.addEventListener('click', async () => {
+        playClick();
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const room = params.get('room');
+          const clean = room ? cleanRoomCode(room) : '';
+          const title = clean ? `Join my Bored! room #${clean}` : 'Join Bored! Coworking';
+          await navigator.share({
+            title: title,
+            text: 'Open this link on your laptop or desktop computer to join the virtual coworking room:',
+            url: window.location.href
+          });
+        } catch (e) {
+          // user cancelled share
+        }
       });
     }
   }
