@@ -84,81 +84,98 @@ class MediaManager {
     return this.audioContext;
   }
 
-  async startLocalStream(customOptions = null) {
+  async startLocalStream({ wantVideo = true, wantAudio = true, videoDeviceId = null, audioDeviceId = null } = {}) {
     // Like Google Meet, disable macOS AUVoiceProcessing system audio hijacking
     // (systemAudioEchoCancellation: false) to prevent ducking/static on other tabs,
     // and rely on browser-level software AEC/DSP.
-    const audioConstraints = {
-      echoCancellation: true,
-      systemAudioEchoCancellation: { ideal: false },
-      googEchoCancellation: true,
-      googAutoGainControl: true,
-      googNoiseSuppression: true,
-      googHighpassFilter: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-      channelCount: { ideal: 1 }
+    const resolvedAudioId = audioDeviceId || this.selectedAudioInputId;
+    const resolvedVideoId = videoDeviceId || null;
+
+    const buildAudioConstraints = (deviceId) => {
+      const c = {
+        echoCancellation: true,
+        systemAudioEchoCancellation: { ideal: false },
+        googEchoCancellation: true,
+        googAutoGainControl: true,
+        googNoiseSuppression: true,
+        googHighpassFilter: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: { ideal: 1 }
+      };
+      if (deviceId) c.deviceId = { exact: deviceId };
+      return c;
     };
 
-    if (this.selectedAudioInputId) {
-      audioConstraints.deviceId = { exact: this.selectedAudioInputId };
-    }
-
-    const defaultConstraints = {
-      video: {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        frameRate: { ideal: 30 }
-      },
-      audio: audioConstraints
+    const buildVideoConstraints = (deviceId) => {
+      const c = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } };
+      if (deviceId) c.deviceId = { exact: deviceId };
+      return c;
     };
 
-    const constraints = customOptions ? Object.assign({}, defaultConstraints, customOptions) : defaultConstraints;
+    // Build constraints honouring what the user actually wants.
+    // Special case: if BOTH are off we can't call getUserMedia at all — use dummy.
+    if (!wantVideo && !wantAudio) {
+      this.localStream = this.createDummyStream();
+      this.isVideoMuted = true;
+      this.isAudioMuted = true;
+    } else {
+      const constraints = {
+        video: wantVideo ? buildVideoConstraints(resolvedVideoId) : false,
+        audio: wantAudio ? buildAudioConstraints(resolvedAudioId) : false,
+      };
 
-    try {
-      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-    } catch (err) {
-      console.warn('[MediaManager] Failed to get video+audio with full constraints, trying fallback:', err);
       try {
-        this.localStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: {
-            echoCancellation: true,
-            systemAudioEchoCancellation: { ideal: false },
-            googEchoCancellation: true,
-            googNoiseSuppression: true,
-            googAutoGainControl: true,
-            googHighpassFilter: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            channelCount: { ideal: 1 }
-          }
-        });
-      } catch (videoErr) {
+        this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        console.warn('[MediaManager] Failed with preferred constraints, trying fallback:', err);
         try {
-          this.localStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              echoCancellation: true,
-              systemAudioEchoCancellation: { ideal: false },
-              googEchoCancellation: true,
-              googNoiseSuppression: true,
-              googAutoGainControl: true,
-              googHighpassFilter: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-              channelCount: { ideal: 1 }
-            },
-            video: false
-          });
-          this.isVideoMuted = true;
-        } catch (audioErr) {
-          console.warn('[MediaManager] No media devices found or permission denied. Creating silent dummy canvas stream:', audioErr);
-          this.localStream = this.createDummyStream();
-          this.isVideoMuted = true;
-          this.isAudioMuted = true;
+          // Retry without specific device IDs but preserve audio/video intent
+          const fallback = {
+            video: wantVideo,
+            audio: wantAudio ? buildAudioConstraints(null) : false,
+          };
+          this.localStream = await navigator.mediaDevices.getUserMedia(fallback);
+        } catch (err2) {
+          if (wantVideo && wantAudio) {
+            // Try audio-only
+            try {
+              this.localStream = await navigator.mediaDevices.getUserMedia({
+                video: false,
+                audio: buildAudioConstraints(null),
+              });
+              this.isVideoMuted = true;
+            } catch (err3) {
+              console.warn('[MediaManager] No media devices found or permission denied. Creating dummy stream:', err3);
+              this.localStream = this.createDummyStream();
+              this.isVideoMuted = true;
+              this.isAudioMuted = true;
+            }
+          } else if (wantVideo) {
+            // Video-only request failed entirely
+            console.warn('[MediaManager] No media devices found or permission denied. Creating dummy stream:', err2);
+            this.localStream = this.createDummyStream();
+            this.isVideoMuted = true;
+          } else {
+            // Audio-only request failed entirely
+            console.warn('[MediaManager] No media devices found or permission denied. Creating dummy stream:', err2);
+            this.localStream = this.createDummyStream();
+            this.isAudioMuted = true;
+          }
         }
       }
     }
+
+    // Reflect the requested muted state on the flags and tracks
+    if (!wantVideo) {
+      this.isVideoMuted = true;
+      this.localStream.getVideoTracks().forEach(t => { t.enabled = false; });
+    }
+    if (!wantAudio) {
+      this.isAudioMuted = true;
+      this.localStream.getAudioTracks().forEach(t => { t.enabled = false; });
+    }
+
 
     this.setupAudioAnalyser('local', this.localStream);
     this.startSpeechDetection();

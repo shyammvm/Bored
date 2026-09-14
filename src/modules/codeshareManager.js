@@ -33,6 +33,10 @@ class CodeshareManager {
     this.broadcastDebounceTimer = null;
     this.listeners = new Map();
 
+    // Remote cursors: peerId -> { userName, selectionStart, selectionEnd, color, timeoutId }
+    this.remoteCursors = new Map();
+    this.cursorBroadcastTimer = null;
+
     this.setupNetworkListeners();
   }
 
@@ -196,8 +200,14 @@ class CodeshareManager {
       this.handleIncomingTyping(data.senderId, data.senderName || 'Coworker');
     });
 
+    peerManager.on('codeshare_cursor', (data) => {
+      if (!data || data.senderId === peerManager.myPeerId) return;
+      this.handleIncomingCursor(data);
+    });
+
     peerManager.on('peer_left', ({ peerId }) => {
       this.removeTyper(peerId);
+      this.removeRemoteCursor(peerId);
     });
 
     peerManager.on('left_room', () => {
@@ -229,6 +239,63 @@ class CodeshareManager {
   emitTypingUpdate() {
     const typers = Array.from(this.activeTypers.values()).map(t => t.userName);
     this.emit('typing_updated', { typers });
+  }
+
+  // Assign a deterministic color to a peer based on their ID
+  getPeerColor(peerId) {
+    const COLORS = [
+      '#7c3aed', '#2563eb', '#059669', '#d97706',
+      '#dc2626', '#0891b2', '#7c2d12', '#4f46e5',
+      '#0d9488', '#b45309', '#9333ea', '#16a34a'
+    ];
+    let hash = 0;
+    for (let i = 0; i < peerId.length; i++) {
+      hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
+    }
+    return COLORS[hash % COLORS.length];
+  }
+
+  handleIncomingCursor(data) {
+    const { senderId, senderName, selectionStart, selectionEnd } = data;
+    const existing = this.remoteCursors.get(senderId);
+    if (existing && existing.timeoutId) clearTimeout(existing.timeoutId);
+
+    // Auto-remove cursor after 10s of inactivity
+    const timeoutId = setTimeout(() => {
+      this.removeRemoteCursor(senderId);
+    }, 10000);
+
+    this.remoteCursors.set(senderId, {
+      userName: senderName || 'Coworker',
+      selectionStart: selectionStart || 0,
+      selectionEnd: selectionEnd || 0,
+      color: this.getPeerColor(senderId),
+      timeoutId
+    });
+
+    this.emit('cursor_updated', { peerId: senderId, cursors: this.remoteCursors });
+  }
+
+  removeRemoteCursor(peerId) {
+    if (this.remoteCursors.has(peerId)) {
+      const entry = this.remoteCursors.get(peerId);
+      if (entry.timeoutId) clearTimeout(entry.timeoutId);
+      this.remoteCursors.delete(peerId);
+      this.emit('cursor_updated', { peerId, cursors: this.remoteCursors });
+    }
+  }
+
+  broadcastCursor(selectionStart, selectionEnd) {
+    if (this.cursorBroadcastTimer) clearTimeout(this.cursorBroadcastTimer);
+    this.cursorBroadcastTimer = setTimeout(() => {
+      peerManager.broadcast({
+        type: 'codeshare_cursor',
+        senderId: peerManager.myPeerId,
+        senderName: peerManager.userName,
+        selectionStart,
+        selectionEnd
+      });
+    }, 50);
   }
 
   notifyTyping() {
@@ -395,9 +462,15 @@ class CodeshareManager {
     this.version = 1;
     this.lastModifiedBy = null;
     this.activeTypers.clear();
+    this.remoteCursors.forEach(entry => { if (entry.timeoutId) clearTimeout(entry.timeoutId); });
+    this.remoteCursors.clear();
     if (this.broadcastDebounceTimer) {
       clearTimeout(this.broadcastDebounceTimer);
       this.broadcastDebounceTimer = null;
+    }
+    if (this.cursorBroadcastTimer) {
+      clearTimeout(this.cursorBroadcastTimer);
+      this.cursorBroadcastTimer = null;
     }
   }
 }

@@ -2090,6 +2090,10 @@ class UIManager {
     const avatar = getInitials(name);
     const grad = getAvatarGradient(name);
 
+    // Snapshot welcome toggles BEFORE stopping previews (cleanup resets the flags)
+    const wantCam = this._welcomeCamOn;
+    const wantMic = this._welcomeMicOn;
+
     // Stop welcome media previews before starting room stream
     if (this._welcomeCamStream) {
       this._welcomeCamStream.getTracks().forEach(t => t.stop());
@@ -2146,7 +2150,25 @@ class UIManager {
     document.getElementById('room-pill-container').style.display = 'block';
     document.getElementById('status-label').textContent = 'Live Room';
 
+    // Always acquire a full video+audio stream so tracks always exist and can
+    // be toggled back on later. We just disable the tracks we don't want yet.
     await mediaManager.startLocalStream();
+
+    // Apply the welcome screen toggle state onto the live stream
+    if (!wantCam) {
+      mediaManager.localStream?.getVideoTracks().forEach(t => { t.enabled = false; });
+      mediaManager.isVideoMuted = true;
+    }
+    if (!wantMic) {
+      mediaManager.localStream?.getAudioTracks().forEach(t => { t.enabled = false; });
+      mediaManager.isAudioMuted = true;
+    }
+
+    // Sync toolbar button states to match what was chosen on the welcome screen
+    this.updateCamUi(mediaManager.isVideoMuted);
+    this.updateMicUi(mediaManager.isAudioMuted);
+    // Notify peers of initial muted state
+    peerManager.updateMyStatus({ isMuted: mediaManager.isAudioMuted, isCamOff: mediaManager.isVideoMuted });
 
     document.getElementById('welcome-modal').style.display = 'none';
   }
@@ -2163,6 +2185,10 @@ class UIManager {
     const avatar = getInitials(name);
     const grad = getAvatarGradient(name);
     const rawInput = document.getElementById('input-join-room-code').value.trim();
+
+    // Snapshot welcome toggles BEFORE stopping previews (cleanup resets the flags)
+    const wantCam = this._welcomeCamOn;
+    const wantMic = this._welcomeMicOn;
 
     // Stop welcome media previews before starting room stream
     if (this._welcomeCamStream) {
@@ -2239,8 +2265,25 @@ class UIManager {
     document.getElementById('header-room-code').textContent = roomCode;
     document.getElementById('room-pill-container').style.display = 'block';
 
-    // Start local camera/mic stream
+    // Always acquire a full video+audio stream so tracks always exist and can
+    // be toggled back on later. We just disable the tracks we don't want yet.
     await mediaManager.startLocalStream();
+
+    // Apply the welcome screen toggle state onto the live stream
+    if (!wantCam) {
+      mediaManager.localStream?.getVideoTracks().forEach(t => { t.enabled = false; });
+      mediaManager.isVideoMuted = true;
+    }
+    if (!wantMic) {
+      mediaManager.localStream?.getAudioTracks().forEach(t => { t.enabled = false; });
+      mediaManager.isAudioMuted = true;
+    }
+
+    // Sync toolbar button states to match what was chosen on the welcome screen
+    this.updateCamUi(mediaManager.isVideoMuted);
+    this.updateMicUi(mediaManager.isAudioMuted);
+    // Notify peers of initial muted state
+    peerManager.updateMyStatus({ isMuted: mediaManager.isAudioMuted, isCamOff: mediaManager.isVideoMuted });
 
     // Connect to the room host
     peerManager.joinRoom(roomCode, hostPeerId);
@@ -2285,6 +2328,14 @@ class UIManager {
     this.btnCodeshareFontDec = document.getElementById('btn-codeshare-font-dec');
     this.btnCodeshareFontInc = document.getElementById('btn-codeshare-font-inc');
     this.codeshareFontLabel = document.getElementById('codeshare-font-label');
+
+    // Cursor overlay containers (injected into the editor wrappers)
+    this.codeshareOverlay = this.createCursorOverlay('codeshare-cursor-overlay');
+    this.codeshareFsOverlay = this.createCursorOverlay('codeshare-cursor-overlay-fs');
+    const editorWrapper = this.codeshareTextarea && this.codeshareTextarea.parentElement;
+    if (editorWrapper) editorWrapper.appendChild(this.codeshareOverlay);
+    const fsEditorWrapper = this.codeshareFsTextarea && this.codeshareFsTextarea.parentElement;
+    if (fsEditorWrapper) fsEditorWrapper.appendChild(this.codeshareFsOverlay);
 
     if (!this.codeshareTextarea) return;
 
@@ -2409,14 +2460,25 @@ class UIManager {
     codeshareManager.on('typing_updated', ({ typers }) => {
       this.renderCodeshareTyping(typers);
     });
+
+    codeshareManager.on('cursor_updated', ({ cursors }) => {
+      if (this.codeshareTextarea && this.codeshareOverlay) {
+        this.renderCursorOverlays(this.codeshareTextarea, this.codeshareOverlay, cursors);
+      }
+      if (this.codeshareFsTextarea && this.codeshareFsOverlay) {
+        this.renderCursorOverlays(this.codeshareFsTextarea, this.codeshareFsOverlay, cursors);
+      }
+    });
   }
 
   bindCodeshareEditor(textarea, gutter, isFullscreen) {
     if (!textarea || !gutter) return;
 
-    // Scroll sync
+    // Scroll sync — also re-render overlays on scroll
     textarea.addEventListener('scroll', () => {
       gutter.scrollTop = textarea.scrollTop;
+      const overlay = isFullscreen ? this.codeshareFsOverlay : this.codeshareOverlay;
+      if (overlay) this.renderCursorOverlays(textarea, overlay, codeshareManager.remoteCursors);
     });
 
     // Keydown handling: Tab indentation & auto-indent
@@ -2457,6 +2519,15 @@ class UIManager {
       }
     });
 
+    // Broadcast cursor on key/mouse navigation
+    const broadcastLocalCursor = () => {
+      codeshareManager.broadcastCursor(textarea.selectionStart, textarea.selectionEnd);
+    };
+    textarea.addEventListener('keyup', broadcastLocalCursor);
+    textarea.addEventListener('mouseup', broadcastLocalCursor);
+    textarea.addEventListener('click', broadcastLocalCursor);
+    textarea.addEventListener('select', broadcastLocalCursor);
+
     // Input handling
     textarea.addEventListener('input', () => {
       if (this.isInternalCodeshareSync) return;
@@ -2479,6 +2550,9 @@ class UIManager {
         start: textarea.selectionStart,
         end: textarea.selectionEnd
       });
+
+      // Broadcast cursor after typing
+      broadcastLocalCursor();
     });
   }
 
@@ -2638,6 +2712,165 @@ class UIManager {
     const count = 1 + (this.peerTiles ? this.peerTiles.size : 0);
     const label = count === 1 ? '1 online' : `${count} online`;
     if (this.codeshareCollabText) this.codeshareCollabText.textContent = label;
+  }
+
+  // --- Live Cursor Overlay System ---
+
+  createCursorOverlay(id) {
+    const el = document.createElement('div');
+    el.id = id;
+    el.className = 'codeshare-cursor-overlay';
+    el.setAttribute('aria-hidden', 'true');
+    return el;
+  }
+
+  /**
+   * Calculates the pixel position of a character offset inside a textarea,
+   * accounting for scroll, padding, font metrics, and line wrapping.
+   * Returns { x, y, lineHeight }.
+   */
+  getCaretPixelPos(textarea, charOffset) {
+    const style = getComputedStyle(textarea);
+    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.6;
+    const paddingTop = parseFloat(style.paddingTop) || 0;
+    const paddingLeft = parseFloat(style.paddingLeft) || 0;
+
+    // Create a mirror div that matches the textarea's computed style
+    const mirror = document.createElement('div');
+    mirror.style.cssText = [
+      `position:absolute`, `visibility:hidden`, `white-space:pre`,
+      `word-break:${style.wordBreak}`, `overflow-wrap:${style.overflowWrap}`,
+      `font:${style.font}`, `font-size:${style.fontSize}`,
+      `font-family:${style.fontFamily}`, `font-weight:${style.fontWeight}`,
+      `letter-spacing:${style.letterSpacing}`,
+      `line-height:${style.lineHeight}`,
+      `tab-size:${style.tabSize}`,
+      `padding-top:${style.paddingTop}`,
+      `padding-left:${style.paddingLeft}`,
+      `padding-right:${style.paddingRight}`,
+      `border-left:${style.borderLeft}`,
+      `border-right:${style.borderRight}`,
+      `width:${textarea.offsetWidth}px`,
+      `box-sizing:border-box`,
+    ].join(';');
+
+    const text = textarea.value.substring(0, charOffset);
+    const span = document.createElement('span');
+    span.textContent = text;
+    mirror.appendChild(span);
+    // Trailing marker
+    const marker = document.createElement('span');
+    marker.textContent = '|';
+    mirror.appendChild(marker);
+    document.body.appendChild(mirror);
+
+    const markerRect = marker.getBoundingClientRect();
+    const spanRect = span.getBoundingClientRect();
+    document.body.removeChild(mirror);
+
+    // Use span end position as cursor position
+    const taRect = textarea.getBoundingClientRect();
+    const x = markerRect.left - taRect.left + textarea.scrollLeft;
+    const y = markerRect.top - taRect.top + textarea.scrollTop;
+
+    return { x, y, lineHeight };
+  }
+
+  /**
+   * Render all remote peer cursors onto an overlay element.
+   * Shows a blinking cursor line + initials badge, and a translucent
+   * selection highlight when the peer has text selected.
+   */
+  renderCursorOverlays(textarea, overlay, cursors) {
+    if (!textarea || !overlay) return;
+
+    // Clear previous overlays
+    overlay.innerHTML = '';
+
+    if (!cursors || cursors.size === 0) return;
+
+    const taRect = textarea.getBoundingClientRect();
+    const style = getComputedStyle(textarea);
+    const lineHeight = parseFloat(style.lineHeight) || 20;
+    const fontSize = parseFloat(style.fontSize) || 13;
+    const paddingLeft = parseFloat(style.paddingLeft) || 0;
+    const content = textarea.value;
+    const scrollTop = textarea.scrollTop;
+    const scrollLeft = textarea.scrollLeft;
+
+    cursors.forEach((cursor, peerId) => {
+      const { userName, selectionStart, selectionEnd, color } = cursor;
+      const hasSelection = selectionEnd > selectionStart;
+      const initials = (userName || '?').trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+      try {
+        // Get caret position
+        const pos = this.getCaretPixelPos(textarea, selectionEnd);
+        const x = pos.x;
+        const y = pos.y;
+
+        // -- Cursor line --
+        const cursorLine = document.createElement('div');
+        cursorLine.className = 'cs-cursor-line';
+        cursorLine.style.cssText = `left:${x}px;top:${y - scrollTop}px;height:${lineHeight}px;border-left-color:${color};`;
+        overlay.appendChild(cursorLine);
+
+        // -- Initials badge --
+        const badge = document.createElement('div');
+        badge.className = 'cs-cursor-badge';
+        badge.textContent = initials;
+        badge.title = userName;
+        badge.style.cssText = `left:${x}px;top:${y - scrollTop - 20}px;background:${color};`;
+        overlay.appendChild(badge);
+
+        // -- Selection highlight --
+        if (hasSelection) {
+          this.renderSelectionHighlight(overlay, textarea, content, selectionStart, selectionEnd, color, lineHeight, scrollTop, scrollLeft, style);
+        }
+      } catch (err) {
+        // Fail silently — caret position can throw on edge cases
+      }
+    });
+  }
+
+  /**
+   * Renders per-line selection highlight rectangles for a given char range.
+   */
+  renderSelectionHighlight(overlay, textarea, content, start, end, color, lineHeight, scrollTop, scrollLeft, taStyle) {
+    // Split content into lines and figure out which lines are covered
+    const lines = content.split('\n');
+    let charCount = 0;
+    const paddingLeft = parseFloat(taStyle.paddingLeft) || 0;
+    const paddingTop = parseFloat(taStyle.paddingTop) || 0;
+
+    for (let li = 0; li < lines.length; li++) {
+      const lineStart = charCount;
+      const lineEnd = charCount + lines[li].length;
+      charCount = lineEnd + 1; // +1 for the '\n'
+
+      // Does this line overlap with [start, end)?
+      if (lineEnd < start || lineStart >= end) continue;
+
+      const selStart = Math.max(start, lineStart);
+      const selEnd = Math.min(end, lineEnd);
+
+      // Measure pixel offset of selStart and selEnd within the line
+      try {
+        const posStart = this.getCaretPixelPos(textarea, selStart);
+        const posEnd = this.getCaretPixelPos(textarea, selEnd);
+
+        const rectEl = document.createElement('div');
+        rectEl.className = 'cs-selection-rect';
+        const x1 = posStart.x;
+        const x2 = selEnd >= lineEnd ? posEnd.x + 6 : posEnd.x; // extend slightly at line end
+        const width = Math.max(x2 - x1, 4);
+        const y = posStart.y - scrollTop;
+        rectEl.style.cssText = `left:${x1}px;top:${y}px;width:${width}px;height:${lineHeight}px;background:${color}30;border-top:1px solid ${color}55;border-bottom:1px solid ${color}55;`;
+        overlay.appendChild(rectEl);
+      } catch (e) {
+        // skip
+      }
+    }
   }
 
   // --- Expandable & Resizable Sidebar ---
